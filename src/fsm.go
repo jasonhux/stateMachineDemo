@@ -8,47 +8,46 @@ type FSM struct {
 }
 
 type details struct {
-	isEnd               bool
-	determineTransition func() (transitionKey string, err error)
-	transitionMap       map[string]transition
+	isEnd                   bool
+	determineNextTransition func() (transitionKey string, err error)
+	transitionMap           map[string]transition
 }
 
 type transition struct {
-	toState              string
-	beforeTransitionFunc func() error
+	toState string
+	action  func() error
 }
 
-func NewFSM(initialState string) *FSM {
+func NewFSM() *FSM {
 	return &FSM{
-		currentState: initialState,
 		stateMap: map[string]details{
 			"removed": details{
-				determineTransition: mockDetermineTransition,
+				determineNextTransition: mockDetermineTransition,
 				transitionMap: map[string]transition{
 					"deploy": transition{
-						toState:              "deployed",
-						beforeTransitionFunc: mockBeforeTransitionFunc,
+						toState: "deployed",
+						action:  mockBeforeTransitionFunc,
 					},
 				},
 			},
 			"deployed": details{
-				determineTransition: mockDetermineTransition,
+				determineNextTransition: mockDetermineTransition,
 				transitionMap: map[string]transition{
 					"configure": transition{
-						toState:              "configured",
-						beforeTransitionFunc: mockBeforeTransitionFunc,
+						toState: "configured",
+						action:  mockBeforeTransitionFunc,
 					},
 				},
 			},
 			"configured": details{
-				determineTransition: mockDetermineTransition,
+				determineNextTransition: mockDetermineTransition,
 				transitionMap: map[string]transition{
 					"complete": transition{
 						toState: "completed",
 					},
 					"remove": transition{
-						toState:              "removed",
-						beforeTransitionFunc: mockBeforeTransitionFunc,
+						toState: "removed",
+						action:  mockBeforeTransitionFunc,
 					},
 				},
 			},
@@ -59,15 +58,17 @@ func NewFSM(initialState string) *FSM {
 	}
 }
 
-func (fsm *FSM) run() (endState string, err error) {
+func (fsm *FSM) startWithState(initialState string) (endState string, err error) {
 	var transitionKey string
-
+	fsm.currentState = initialState
 	for {
-		stateDetails := fsm.stateMap[fsm.currentState]
-
+		stateDetails, ok := fsm.stateMap[fsm.currentState]
+		if !ok {
+			fmt.Printf("current state <%s> is not a valid one", fsm.currentState)
+			break
+		}
 		//if state is the end state, i.e. completed, then exit the fsm
 		if stateDetails.isEnd {
-			fmt.Printf("End state <%s> is reached\n", fsm.currentState)
 			endState = fsm.currentState
 			break
 		}
@@ -81,6 +82,7 @@ func (fsm *FSM) run() (endState string, err error) {
 		}
 
 		//in real world, we should have the transition key determined inside of determineTransition func; again for demo purpose, the func is just to return the input transitin key;
+		//
 		//stateDetails.determineTransition()
 		transition, ok := stateDetails.transitionMap[transitionKey]
 		if !ok {
@@ -89,8 +91,8 @@ func (fsm *FSM) run() (endState string, err error) {
 			break
 		}
 		//run before transition
-		if transition.beforeTransitionFunc != nil {
-			err := transition.beforeTransitionFunc()
+		if transition.action != nil {
+			err := transition.action()
 			if err != nil {
 				//can do retry on beforeTransitionFunc
 				//here for demo purpose just break the loop
