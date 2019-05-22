@@ -56,6 +56,9 @@ func NewFSM() *FSM {
 					trans.START_UPDATE: transition{
 						toState: state.UPDATING,
 					},
+					trans.COMPLETE_TASK: transition{
+						toState: state.DONE,
+					},
 				},
 			},
 			state.DONE: details{

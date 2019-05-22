@@ -35,13 +35,21 @@ func main() {
 			fmt.Println(err)
 			return
 		}
+		//if it's been retried twice but still not updated, then just complete task
+		if i == 2 {
+			err = fsm.sendTransition(trans.COMPLETE_TASK)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println("Failed to update the cluster")
+			return
+		}
 		err = fsm.sendTransition(trans.START_UPDATE)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 	}
-	fmt.Println("Failed to update the cluster")
 }
 func mockVerifyClusterUpdate(i int) (isSuccessful bool) {
 	//mock verify func to return true on 2nd retry
