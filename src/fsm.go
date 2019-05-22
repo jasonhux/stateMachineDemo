@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/stateMachineDemo/src/state"
 	trans "github.com/stateMachineDemo/src/transition"
-	"github.com/stateMachineDemo/state"
 )
 
 type FSM struct {
